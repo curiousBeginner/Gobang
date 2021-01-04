@@ -1,0 +1,50 @@
+#header{
+    height: 30px;
+    line-height: 30px;
+    background: #f2f2f2;
+    font-size: 14px;
+}
+.room-box{
+    height: 30px;
+    line-height: 30px;
+    background: #f1f1f1;
+    font-size: 14px;
+}
+.header-name,.room-name{
+    text-align: right;
+    padding:  0 20px;
+}
+
+.created_user_name_box{
+    padding: 50px;
+    text-align: center;
+}
+
+.room_add{
+    padding: 10px;
+}
+
+.room_list{
+    overflow: hidden;
+}
+.room_list>div{
+    float: left;
+    width: 200px;
+    padding: 10px;
+    margin: 10px;
+    /* cursor: pointer; */
+    text-align: center;
+    box-shadow: 1px 1px 10px 3px rgba(0,0,0,.1);
+}
+.room_list p {
+    height: 40px;
+    line-height: 40px;
+    margin: 0;
+}
+.room_list button{
+    margin-top: 10px;
+    cursor: pointer;
+}
+.room_list>div:hover{
+    box-shadow: 1px 1px 10px 3px rgba(0,0,0,.2);
+}

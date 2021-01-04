@@ -1,0 +1,13 @@
+.DS_Store
+node_modules/
+*.zip
+package-lock.json
+*-废弃.*
+废弃-.*
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln

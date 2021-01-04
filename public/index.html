@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五子棋对战</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <link rel="stylesheet" href="./css.css">
+    <script src="https://cdn.staticfile.org/jquery/1.11.3/jquery.min.js"></script>
+</head>
+
+<body>
+    <div id="header"></div>
+    <div id="room"></div>
+    <div id="app">
+        
+    </div>
+    <div id="text"></div>
+    <script src="./task.js"></script>
+    <script>
+        var BASE = 'game___'
+        var USER_INFO_BUFFER = BASE+'User_Info'
+        var ROOM_INFO_BUFFER = BASE+'Room_Info'
+        var USER_INFO = {}
+        var ROOM_INFO = {}
+        var ws = new WebSocket('ws://localhost:8181')
+        function format(d,t){
+            if(t==='s'){
+                return JSON.stringify(d)
+            }
+            if(d){
+                return JSON.parse(d)
+            }else{
+                return {}
+            }
+        }
+        function send(type,data){
+            ws.send(JSON.stringify({ type: type, data: data }))
+        }
+        var GAME = null
+        ws.onmessage = function(event) {
+            const { code,data } = format(event.data)
+            console.log(code,data)
+            switch(code){
+                case 100:
+                    sessionStorage.setItem(USER_INFO_BUFFER,format(data,'s'))
+                    USER_INFO = new User(data.id,data)
+                    var room = format(sessionStorage.getItem(ROOM_INFO_BUFFER))
+                    ROOM_INFO = new Room()
+                    ROOM_INFO.setInfo(room)
+                    // console.log(room,ROOM_INFO)
+                    createdUser(data,function(type,d){
+                        console.log(type)
+                        if(type === 'name'){
+                            if(d){
+                                send(101,{ name: d, id: USER_INFO.id })
+                            }
+                        }else if(type === 'init'){
+                            // console.log('init',{ id: ROOM_INFO.id, userId: USER_INFO.id })
+                            send(201,{ id: ROOM_INFO.id, userId: USER_INFO.id })
+                        }
+                    })
+                break;
+                case 101:
+                    USER_INFO.setInfo(data)
+                    setUserInfo(data)
+                    send(201,{ id: ROOM_INFO.id })
+                break;
+                case 201:
+                    // 初始化
+                    console.log(data)
+                    sessionStorage.setItem(ROOM_INFO_BUFFER,format(data,'s'))
+                    ROOM_INFO.setInfo(data)
+                    setRoomInfo(data)
+
+                    roomInfo({
+                        // autoRole: true,
+                        data: data.data || false,
+                        // width: 600,
+                        // height: 600,
+                        // curIndex: 60
+                    },function(game){
+                        GAME = game
+                        // 检查是否储存房间数据
+                        console.log(data.data)
+                        if(data.data === null){
+                            send(203,{
+                                id:ROOM_INFO.id,
+                                data: GAME.data
+                            })
+                        }
+                        GAME.setRole(data.mainUserId === USER_INFO.id ? 'black' : 'white')
+                        GAME.onClick(function(x,y){
+                            console.log(GAME.roleOption[GAME.role].value)
+                            send(204,{
+                                x,y,role:GAME.roleOption[GAME.role].value,
+                                roomId: ROOM_INFO.id,
+                                userId: USER_INFO.id
+                            })
+                        })
+                        GAME.setVictoryCallback(function(d){
+                            let bool = window.confirm(d.label+'-胜利！')
+                            if(bool){
+                                GAME.initData()
+                                send(205,{
+                                    id:ROOM_INFO.id,
+                                    data: GAME.data
+                                })
+                            }
+                        })
+                    })
+                    if(data.user.length>0){
+                        GAME.gameStart()
+                        send(300,{
+                            id:ROOM_INFO.id
+                        })
+                    }
+                break;
+                case 202:
+                    createdRoomList(data,function(type,d){
+                        if(type === 'name'&&d){
+                            send(200,{ id:USER_INFO.id, name: d })
+                        }else if(type === 'room'){
+                            send(201,{ id: d, userId: USER_INFO.id })
+                        }
+                    })
+                break;
+                case 204:
+                    const {x,y,role} = data
+                    GAME.moveLater(x,y,GAME.getRole(role).key)
+                break;
+                case 300:
+                    GAME.gameStart()
+                break;
+            }
+        };
+        ws.onopen = function () {
+            var userInfo = format(sessionStorage.getItem(USER_INFO_BUFFER))
+            console.log('链接成功,发送建立请求',`user_info:`,userInfo)
+            send(100,userInfo)
+        }
+    </script>
+</body>
+
+</html>
